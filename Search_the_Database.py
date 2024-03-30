@@ -12,20 +12,7 @@ st.title("Delirium and Sepsis in Transgenic Mice Database")
 
 # Initialize connection.
 conn = st.connection('mysql', type='sql')
-
-# Perform queries.
-#DataRepository = conn.query('SELECT * FROM DataRepository;', ttl=1)
-#Intervention = conn.query('SELECT * FROM Intervention;', ttl=1)
-#Mice = conn.query('SELECT * FROM Mice;', ttl=1)
-#Sequencing = conn.query('SELECT * FROM Sequencing;', ttl=1)
-#Study = conn.query('SELECT * FROM Study;', ttl=1)
-
-
-# Print results.
-#for row in Mice.itertuples():
-#    st.write(row)
-
-
+conn.reset()
 
 col1, col2 = st.columns([1,1])
 with col1:
@@ -48,10 +35,13 @@ if disease_filter != []:
 else:
     select1 += f"Platform LIKE '%{name_filter}%';"
 
-st.write("Studies that match your search:")
 study_df = conn.query(select1, ttl=1)
-st.dataframe(study_df, hide_index=True, 
-             column_config={"URL": st.column_config.LinkColumn("URL")})
+if study_df.empty == True:
+    st.write("There were no studies that match your search :slightly_frowning_face:")
+else:
+    st.write("Studies that match your search:")
+    st.dataframe(study_df, hide_index=True, 
+                 column_config={"URL": st.column_config.LinkColumn("URL")})
 
 st.divider()
 
