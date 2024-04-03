@@ -1,5 +1,6 @@
 import streamlit as st 
 import pandas as pd
+from datetime import date
 
 st.set_page_config(
     page_title="Database Search",
@@ -20,10 +21,10 @@ with col1:
                                     options = conn.query("SELECT DISTINCT DiseaseFocus FROM Study;", ttl=1), 
                                     default=None)
 with col2:
-    name_filter = st.text_input("Sequencing Platform", placeholder="Enter Search")
+    start_date, end_date = st.slider("Date Published", min_value=2000, max_value=date.today().year, 
+                            value=(2015,2023))
 
-select1 = ("SELECT st.StudyID,Title,DiseaseFocus,Platform,DOI,URL,Journal,DatePub,ContactName,ContactEmail "
-            "FROM Study AS st JOIN Sequencing AS seq ON seq.StudyID = st.StudyID WHERE ")
+select1 = ("SELECT * FROM Study WHERE ")
 
 if disease_filter != []:
     for i in range(len(disease_filter)):
@@ -31,9 +32,9 @@ if disease_filter != []:
             select1 += f"(DiseaseFocus='{disease_filter[i]}'"
         else:
             select1 += f" OR DiseaseFocus='{disease_filter[i]}'"
-    select1 += f") AND Platform LIKE '%{name_filter}%';"
+    select1 += f") AND DatePub BETWEEN '{start_date}-01-01' AND '{end_date}-12-31';"
 else:
-    select1 += f"Platform LIKE '%{name_filter}%';"
+    select1 += f"DatePub BETWEEN '{start_date}-01-01' AND '{end_date}-12-31';"
 
 study_df = conn.query(select1, ttl=1)
 if study_df.empty == True:
