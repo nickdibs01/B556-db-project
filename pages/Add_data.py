@@ -50,8 +50,8 @@ def getMice(key):
     origin = st.text_input("Where were the mice obtained from?:red[*]",
                            placeholder="HFK Biotechnology (Beijing, China)", key=f"origin{key}")
     conditions = st.text_input("What conditions were they under?",
-                               placeholder="Specific pathogen-free facility under a 12 h light/dark cycle with free access to water and food",
-                               key=f"conditions{key}")
+                               placeholder="Specific pathogen-free facility under a 12 h light/dark "
+                               "cycle with free access to water and food", key=f"conditions{key}")
     mice_cols = (age, strain, sex, origin, conditions)
     req_mice_cols = (age, strain, sex, origin)
     return mice_cols, req_mice_cols
@@ -63,16 +63,16 @@ def getSeq(key):
         dataAvail = ""
     else:
         if dataAvail == "Yes":
-            dataAvail = 1
+            dataAvail = '1'
         else:
-            dataAvail = 0
+            dataAvail = '0'
     seq_method = st.text_input("What method was used for sequencing?:red[*]", placeholder="scRNA-seq", 
                                key=f"seq_method{key}")
     exp_groups = st.text_input("Breifly describe the experimental groups:red[*]", 
                             placeholder="Four E4bp4−/− mice and four control mice", key=f"exp_groups{key}")
     prep = st.text_input("Which library preparation protocol was used?:red[*]", 
-                        placeholder="Bioanalyzer 2100 RNA 6000 Nano Kit, 10x Genomics (Chromium Single Cell Controller)", 
-                        key=f"prep{key}")
+                        placeholder="Bioanalyzer 2100 RNA 6000 Nano Kit, 10x Genomics "
+                        "(Chromium Single Cell Controller)", key=f"prep{key}")
     platform = st.text_input("What platform did the sequencing?:red[*]", placeholder="Illumina NovaSeq 6000", 
                              key=f"platform{key}")
     align_soft = st.text_input("Which alignment software was used?", 
@@ -87,7 +87,8 @@ def getSeq(key):
 
 def getData(key):
     description = st.text_input("How was this data used in the study?:red[*]",
-                                placeholder="Additional public data used to enrich murine dendritic cells subset using Seurat",
+                                placeholder="Additional public data used to enrich murine dendritic "
+                                "cells subset using Seurat",
                                 key=f"description{key}")
     dbname = st.text_input("In what database can this data be found?:red[*]",
                            placeholder="GEO", key=f"dbname{key}")
@@ -106,31 +107,6 @@ def getIntervention(key):
     intervention_cols = (treatment, method)
     req_intervention_cols = (treatment, method)
     return intervention_cols, req_intervention_cols
-
-
-def submit_data(table, columns):
-    if table == "Study":
-        sql_str = f"INSERT INTO {table} VALUES (NULL,'{columns[0]}'"
-        ######################################################################
-    elif table == "Data":
-        sql_str = f"INSERT INTO {table} VALUES (NULL,'{columns[0]}'"
-    for i in columns[1:]:
-        if i != "":
-            sql_str += f",'{i}'"
-        else:
-            sql_str += ",NULL"
-    sql_str += ");"
-    print(sql_str)
-    with conn.session as session:
-        session.execute(text(sql_str))
-        session.commit()
-
-def check_req(table, req_cols, all_columns):
-    if all(len(i) != 0 for i in req_cols):
-        submit_data(table, all_columns)
-        return True
-    else:
-        return False
 
 
 st.markdown("#### First, we'll need the Study info:")
@@ -160,49 +136,93 @@ seq = st.number_input("How many unique sequencing sets were used for this study?
                       value=None, placeholder="Type a number...")
 st.write("\n")
 seq_groups = []
+data_groups = []
 if seq != None:
     for i in range(1,seq+1):
         st.markdown(f"##### Sequence set {i}:")
         seq_cols, req_seq_cols = getSeq(i)
         seq_groups.append((seq_cols, req_seq_cols))
-        if seq_cols[0] == 1:
+        if seq_cols[0] == '1':
             st.markdown("##### About this Data you said was public...")
             data = st.number_input("How many datasets came from this sequencing?:red[*]", min_value=1,
-                                value=None, placeholder="Type a number...")
-            data_groups = []
+                                value=None, placeholder="Type a number...", key=f"data{i}")
             if data != None:
                 for j in range(1,data+1):
                     st.markdown(f"##### Dataset {j}:")
                     data_cols, req_data_cols = getData(str(i)+str(j))
                     data_groups.append((data_cols, req_data_cols))
+            else:
+                data_groups.append((("",""),("","")))
         st.write("\n")
 
+all_answers = [[(study_cols, req_study_cols)], mice_groups, seq_groups]
+if(any(i[0][0] == '1' for i in seq_groups)):
+    all_answers.append(data_groups)
 
 st.divider()
 
 st.markdown("#### Lastly, we'll need to know about any treatment the mice received")
 st.write(":red[*Required]")
 treated = st.selectbox("Were these Mice given any treatment?:red[*]", ("No", "Yes"), index=None)
+treatment_groups = []
 if treated == 'Yes':
     treatments = st.number_input("How many treatments were implemented in this study?", min_value=1,
                                  value=None, placeholder="Type a number...")
     st.write("\n")
-    treatment_groups = []
     if treatments != None:
         for i in range(1,treatments+1):
             st.markdown(f"##### Treatment {i}:")
             intervention_cols, req_intervention_cols = getIntervention(i)
             treatment_groups.append((intervention_cols, req_intervention_cols))
             st.write("\n")
-
+    all_answers.append(treatment_groups)
+elif treated == None:
+    all_answers.append(treatment_groups)
 
 
 pressed = st.button("Submit")
 
 
+def check_req(group):
+    if group != []:
+        all_entries = []
+        for i in group:
+            all_entries.append(all(len(j) != 0 for j in i[1]))
+        valid = all(all_entries)
+    else:
+        valid = False
+    return valid
+
+all_valid = []
+for i in all_answers:
+    all_valid.append(check_req(i))
+
+
+def submit_data(table, columns):
+    if table == "Study":
+        sql_str = f"INSERT INTO {table} VALUES (NULL,'{columns[0]}'"
+        ######################################################################
+    elif table == "Data":
+        sql_str = f"INSERT INTO {table} VALUES (NULL,'{columns[0]}'"
+    for i in columns[1:]:
+        if i != "":
+            sql_str += f",'{i}'"
+        else:
+            sql_str += ",NULL"
+    sql_str += ");"
+    return sql_str
+    #with conn.session as session:
+        #session.execute(text(sql_str))
+        #session.commit()
+
+
+
+
 if pressed == False:
-    st.write("\n")
-elif check_req("Study", req_study_cols, study_cols):
+    st.info("Please press the submit button after filling out all required fields")
+elif all(all_valid):
+
+    print(submit_data("Study", study_cols))
     st.success("Success!")
 else:
     st.error('Please fill out all required fields')

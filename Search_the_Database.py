@@ -104,7 +104,7 @@ if table_name == "Sequencing" and len(IDs) != 0 and filter == True:
         st.dataframe(data_rep_df, hide_index=True, column_config={"URL": st.column_config.LinkColumn("URL")})
 elif table_name == "Sequencing" and filter == False:
     st.write("Sequence Data")
-    st.dataframe(conn.query("SELECT * FROM DataRepository"), hide_index=True,
-                 column_config={"URL": st.column_config.LinkColumn("URL")})
+    st.dataframe(conn.query("SELECT SequenceID,DataDescription,DatabaseName,AccessionNumber,URL FROM DataRepository"), 
+                 hide_index=True, column_config={"URL": st.column_config.LinkColumn("URL")})
 
 
