@@ -136,7 +136,7 @@ seq = st.number_input("How many unique sequencing sets were used for this study?
                       value=None, placeholder="Type a number...")
 st.write("\n")
 seq_groups = []
-data_groups = []
+data_groups = {}
 if seq != None:
     for i in range(1,seq+1):
         st.markdown(f"##### Sequence set {i}:")
@@ -150,14 +150,19 @@ if seq != None:
                 for j in range(1,data+1):
                     st.markdown(f"##### Dataset {j}:")
                     data_cols, req_data_cols = getData(str(i)+str(j))
-                    data_groups.append((data_cols, req_data_cols))
+                    if j == 1:
+                        data_groups[i] = [(data_cols, req_data_cols)]
+                    else:
+                        data_groups[i] += [(data_cols, req_data_cols)]
             else:
-                data_groups.append((("",""),("","")))
+                data_groups[i] = [(("",""),("",""))]
         st.write("\n")
 
-all_answers = [[(study_cols, req_study_cols)], mice_groups, seq_groups]
+all_answers = {"Study" : [(study_cols, req_study_cols)], "Mice" : mice_groups, "Sequencing": seq_groups}
+
+
 if(any(i[0][0] == '1' for i in seq_groups)):
-    all_answers.append(data_groups)
+    all_answers["DataRepository"] = data_groups
 
 st.divider()
 
@@ -175,45 +180,73 @@ if treated == 'Yes':
             intervention_cols, req_intervention_cols = getIntervention(i)
             treatment_groups.append((intervention_cols, req_intervention_cols))
             st.write("\n")
-    all_answers.append(treatment_groups)
+    all_answers["Intervention"] = treatment_groups
 elif treated == None:
-    all_answers.append(treatment_groups)
+    all_answers["Intervention"] = treatment_groups
 
 
-pressed = st.button("Submit")
 
 
 def check_req(group):
-    if group != []:
+    if group != [] and group != {}:
         all_entries = []
-        for i in group:
-            all_entries.append(all(len(j) != 0 for j in i[1]))
+        if isinstance(group, dict):
+            for i in group.values():
+                for j in i:
+                    all_entries.append(all(len(k) != 0 for k in j[1]))
+        else:
+            for i in group:
+                all_entries.append(all(len(j) != 0 for j in i[1]))
         valid = all(all_entries)
     else:
         valid = False
     return valid
 
+print(all_answers["DataRepository"])
+
 all_valid = []
-for i in all_answers:
+for i in all_answers.values():
     all_valid.append(check_req(i))
 
+print(all_valid)
 
-def submit_data(table, columns):
-    if table == "Study":
-        sql_str = f"INSERT INTO {table} VALUES (NULL,'{columns[0]}'"
-        ######################################################################
-    elif table == "Data":
-        sql_str = f"INSERT INTO {table} VALUES (NULL,'{columns[0]}'"
-    for i in columns[1:]:
-        if i != "":
-            sql_str += f",'{i}'"
+
+def submit_data(ans):
+
+    study_str = "INSERT INTO Study VALUES (NULL"
+    for i in ans['Study'][0][0]:
+        if i == '':
+            study_str += ",NULL"
         else:
-            sql_str += ",NULL"
-    sql_str += ");"
-    return sql_str
+            study_str += f",'{i}'"
+    sql_code.write(study_str)
     #with conn.session as session:
-        #session.execute(text(sql_str))
+        #session.execute(text(study_str))
         #session.commit()
+
+    study_id = conn.query("SELECT LAST_INSERT_ID()", ttl=1)
+    study_id = study_id[study_id.columns[0]][0]
+
+    
+    for i in ans['Mice']:
+        mice_str = f"INSERT INTO Mice VALUES (NULL,{study_id}"
+        for j in i[0]:
+            if j == '':
+                mice_str += ",NULL"
+            else:
+                mice_str += f",'{j}'"
+        mice_str += ");"
+        sql_code.write(mice_str)
+        #with conn.session as session:
+            #session.execute(text(mice_str))
+            #session.commit()
+
+
+
+
+
+placeholder = st.empty()
+pressed = placeholder.button("Submit")
 
 
 
@@ -221,9 +254,14 @@ def submit_data(table, columns):
 if pressed == False:
     st.info("Please press the submit button after filling out all required fields")
 elif all(all_valid):
-
-    print(submit_data("Study", study_cols))
+    placeholder.empty()
     st.success("Success!")
+    sql_code = st.expander("Show SQL code  \(still working on this\)")
+    if 'DataRepository' not in all_answers:
+        all_answers['DataRepository'] = None
+    if 'Intervention' not in all_answers:
+        all_answers['Intervention'] = None
+    submit_data(all_answers)
 else:
     st.error('Please fill out all required fields')
 
