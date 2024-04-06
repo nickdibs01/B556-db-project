@@ -202,13 +202,10 @@ def check_req(group):
         valid = False
     return valid
 
-print(all_answers["DataRepository"])
 
 all_valid = []
 for i in all_answers.values():
     all_valid.append(check_req(i))
-
-print(all_valid)
 
 
 def submit_data(ans):
@@ -219,6 +216,7 @@ def submit_data(ans):
             study_str += ",NULL"
         else:
             study_str += f",'{i}'"
+    study_str += ");"
     sql_code.write(study_str)
     #with conn.session as session:
         #session.execute(text(study_str))
@@ -240,8 +238,51 @@ def submit_data(ans):
         #with conn.session as session:
             #session.execute(text(mice_str))
             #session.commit()
+    
+    count = 1
+    for i in ans['Sequencing']:
+        seq_str = f"INSERT INTO Sequencing VALUES (NULL,{study_id}"
+        for j in i[0]:
+            if j == '':
+                seq_str += ",NULL"
+            else:
+                seq_str += f",'{j}'"
+        seq_str += ");"
+        sql_code.write(seq_str)
+        #with conn.session as session:
+            #session.execute(text(seq_str))
+            #session.commit()
+        seq_id = conn.query("SELECT LAST_INSERT_ID()", ttl=1)
+        seq_id = seq_id[seq_id.columns[0]][0]
 
-
+        if i[0][0] == '1':
+            for j in ans['DataRepository'][count]:
+                data_str = f"INSERT INTO DataRepository VALUES (NULL,{seq_id}"
+                for k in j[0]:
+                    if k == '':
+                        data_str += ",NULL"
+                    else:
+                        data_str += f",'{k}'"
+                data_str += ");"
+                sql_code.write(data_str)
+                #with conn.session as session:
+                    #session.execute(text(data_str))
+                    #session.commit()
+        count += 1
+    
+    if ans["Intervention"] != None:
+        for i in ans['Intervention']:
+            inter_str = f"INSERT INTO Mice VALUES (NULL,{study_id}"
+            for j in i[0]:
+                if j == '':
+                    inter_str += ",NULL"
+                else:
+                    inter_str += f",'{j}'"
+            inter_str += ");"
+            sql_code.write(inter_str)
+            #with conn.session as session:
+                #session.execute(text(inter_str))
+                #session.commit()
 
 
 
@@ -256,7 +297,7 @@ if pressed == False:
 elif all(all_valid):
     placeholder.empty()
     st.success("Success!")
-    sql_code = st.expander("Show SQL code  \(still working on this\)")
+    sql_code = st.expander(":green[Show SQL code]  \(still working on FKs, everything else should work\)")
     if 'DataRepository' not in all_answers:
         all_answers['DataRepository'] = None
     if 'Intervention' not in all_answers:
