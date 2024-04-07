@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy.sql import text
 from datetime import date
+import time
 
 st.set_page_config(
     page_title="Add Data",
@@ -218,13 +219,19 @@ def submit_data(ans):
             study_str += f",'{i}'"
     study_str += ");"
     sql_code.write(study_str)
-    #with conn.session as session:
-        #session.execute(text(study_str))
-        #session.commit()
+    with conn.session as session:
+        session.execute(text("ALTER TABLE Study AUTO_INCREMENT = 0;"))
+        session.execute(text("ALTER TABLE Mice AUTO_INCREMENT = 0;"))
+        session.execute(text("ALTER TABLE Sequencing AUTO_INCREMENT = 0;"))
+        session.execute(text("ALTER TABLE DataRepository AUTO_INCREMENT = 0;"))
+        session.execute(text("ALTER TABLE Intervention AUTO_INCREMENT = 0;"))
+        session.commit()
+        session.execute(text(study_str))
+        session.commit()
 
-    study_id = conn.query("SELECT LAST_INSERT_ID()", ttl=1)
+    study_id = conn.query("SELECT LAST_INSERT_ID();", ttl=0)
+    print(study_id)
     study_id = study_id[study_id.columns[0]][0]
-
     
     for i in ans['Mice']:
         mice_str = f"INSERT INTO Mice VALUES (NULL,{study_id}"
@@ -235,9 +242,9 @@ def submit_data(ans):
                 mice_str += f",'{j}'"
         mice_str += ");"
         sql_code.write(mice_str)
-        #with conn.session as session:
-            #session.execute(text(mice_str))
-            #session.commit()
+        with conn.session as session:
+            session.execute(text(mice_str))
+            session.commit()
     
     count = 1
     for i in ans['Sequencing']:
@@ -249,10 +256,11 @@ def submit_data(ans):
                 seq_str += f",'{j}'"
         seq_str += ");"
         sql_code.write(seq_str)
-        #with conn.session as session:
-            #session.execute(text(seq_str))
-            #session.commit()
-        seq_id = conn.query("SELECT LAST_INSERT_ID()", ttl=1)
+        with conn.session as session:
+            session.execute(text(seq_str))
+            session.commit()
+        seq_id = conn.query("SELECT LAST_INSERT_ID();", ttl=0)
+        print(seq_id)
         seq_id = seq_id[seq_id.columns[0]][0]
 
         if i[0][0] == '1':
@@ -265,14 +273,14 @@ def submit_data(ans):
                         data_str += f",'{k}'"
                 data_str += ");"
                 sql_code.write(data_str)
-                #with conn.session as session:
-                    #session.execute(text(data_str))
-                    #session.commit()
+                with conn.session as session:
+                    session.execute(text(data_str))
+                    session.commit()
         count += 1
     
     if ans["Intervention"] != None:
         for i in ans['Intervention']:
-            inter_str = f"INSERT INTO Mice VALUES (NULL,{study_id}"
+            inter_str = f"INSERT INTO Intervention VALUES (NULL,{study_id}"
             for j in i[0]:
                 if j == '':
                     inter_str += ",NULL"
@@ -280,24 +288,25 @@ def submit_data(ans):
                     inter_str += f",'{j}'"
             inter_str += ");"
             sql_code.write(inter_str)
-            #with conn.session as session:
-                #session.execute(text(inter_str))
-                #session.commit()
+            with conn.session as session:
+                session.execute(text(inter_str))
+                session.commit()
 
 
 
 placeholder = st.empty()
 pressed = placeholder.button("Submit")
 
-
-
+print("\n")
+print(all_answers)
+print(conn.query)
 
 if pressed == False:
     st.info("Please press the submit button after filling out all required fields")
 elif all(all_valid):
     placeholder.empty()
     st.success("Success!")
-    sql_code = st.expander(":green[Show SQL code]  \(still working on FKs, everything else should work\)")
+    sql_code = st.expander(":green[Show SQL code]")
     if 'DataRepository' not in all_answers:
         all_answers['DataRepository'] = None
     if 'Intervention' not in all_answers:
