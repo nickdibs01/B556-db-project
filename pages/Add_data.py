@@ -20,6 +20,7 @@ def getStudy():
     title = st.text_input("What is the title of this Study?:red[*]", 
                         placeholder="E4BP4 Coordinates Circadian Control of Cognition in Delirium")
     diseaseFocus = st.text_input("What disease is it focused on?:red[*]", placeholder="Delirium")
+    diseaseFocus = diseaseFocus.title()
     doi = st.text_input("What is the DOI of this study?", placeholder="10.1002/advs.202200559")
     url = st.text_input("Please provide this link to this study:red[*]", help="Preferably to the full text", 
                         placeholder="https://onlinelibrary.wiley.com/doi/10.1002/advs.202200559")
@@ -58,6 +59,15 @@ def getMice(key):
     return mice_cols, req_mice_cols
 
 def getSeq(key):
+    st.write("\n")
+    seq_method = st.checkbox("Was scRNA-seq the method used for sequencing?:red[*]", value = True, 
+                               key=f"seq_method{key}")
+    if seq_method == True:
+        seq_method = "scRNA-seq"
+    else:
+        seq_method = ""
+        st.write("Sorry, all experiments added into this database should be scRNA experiments")
+    st.write("\n")
     dataAvail = st.selectbox("Is the Data publicly available?:red[*]", ("Yes", "No"), index=None, 
                              key=f"dataAvail{key}")
     if dataAvail == None:
@@ -67,8 +77,6 @@ def getSeq(key):
             dataAvail = '1'
         else:
             dataAvail = '0'
-    seq_method = st.text_input("What method was used for sequencing?:red[*]", placeholder="scRNA-seq", 
-                               key=f"seq_method{key}")
     exp_groups = st.text_input("Breifly describe the experimental groups:red[*]", 
                             placeholder="Four E4bp4−/− mice and four control mice", key=f"exp_groups{key}")
     prep = st.text_input("Which library preparation protocol was used?:red[*]", 
@@ -104,7 +112,8 @@ def getData(key):
 def getIntervention(key):
     treatment = st.text_input("What treatment were the mice given?:red[*]", 
                               placeholder="Induced polymicrobial sepsis", key=f"treatment{key}")
-    method = st.text_input("What method was used to give this treatment?:red[*]", key=f"method{key}")
+    method = st.text_input("What method was used to give this treatment?:red[*]", 
+                           placeholder="Cecal ligation and puncture (CLP)", key=f"method{key}")
     intervention_cols = (treatment, method)
     req_intervention_cols = (treatment, method)
     return intervention_cols, req_intervention_cols
@@ -230,7 +239,7 @@ def submit_data(ans):
         session.commit()
 
     study_id = conn.query("SELECT LAST_INSERT_ID();", ttl=0)
-    print(study_id)
+    #print(study_id)
     study_id = study_id[study_id.columns[0]][0]
     
     for i in ans['Mice']:
@@ -260,7 +269,7 @@ def submit_data(ans):
             session.execute(text(seq_str))
             session.commit()
         seq_id = conn.query("SELECT LAST_INSERT_ID();", ttl=0)
-        print(seq_id)
+        #print(seq_id)
         seq_id = seq_id[seq_id.columns[0]][0]
 
         if i[0][0] == '1':
@@ -294,17 +303,16 @@ def submit_data(ans):
 
 
 
-placeholder = st.empty()
-pressed = placeholder.button("Submit")
+submit_placeholder = st.empty()
+pressed = submit_placeholder.button("Submit")
 
 print("\n")
 print(all_answers)
-print(conn.query)
 
 if pressed == False:
     st.info("Please press the submit button after filling out all required fields")
 elif all(all_valid):
-    placeholder.empty()
+    submit_placeholder.empty()
     st.success("Success!")
     sql_code = st.expander(":green[Show SQL code]")
     if 'DataRepository' not in all_answers:
