@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy.sql import text
 from datetime import date
-import time
 
 st.set_page_config(
     page_title="Add Data",
@@ -306,8 +305,8 @@ def submit_data(ans):
 submit_placeholder = st.empty()
 pressed = submit_placeholder.button("Submit")
 
-print("\n")
-print(all_answers)
+#print("\n")
+#print(all_answers)
 
 if pressed == False:
     st.info("Please press the submit button after filling out all required fields")
