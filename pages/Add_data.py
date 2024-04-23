@@ -18,12 +18,14 @@ st.sidebar.success("What you would like to do?")
 def getStudy():
     title = st.text_input("What is the title of this Study?:red[*]", 
                         placeholder="E4BP4 Coordinates Circadian Control of Cognition in Delirium")
+    title = title.replace("'", "")
     diseaseFocus = st.text_input("What disease is it focused on?:red[*]", placeholder="Delirium")
     diseaseFocus = diseaseFocus.title()
     doi = st.text_input("What is the DOI of this study?", placeholder="10.1002/advs.202200559")
     url = st.text_input("Please provide this link to this study:red[*]", help="Preferably to the full text", 
                         placeholder="https://onlinelibrary.wiley.com/doi/10.1002/advs.202200559")
     journal = st.text_input("What journal was it published in?:red[*]", placeholder="Wiley")
+    journal = journal.replace("'", "")
     datePub = st.date_input("When was it published?:red[*]", value=None, 
                             min_value=date(2000,1,1), max_value=date.today())
     if datePub == None:
@@ -44,15 +46,18 @@ def getMice(key):
                         key=f"age{key}")
     strain = st.text_input("What strain of mice are they?:red[*]", placeholder="Wild type C57BL/6J",
                            key=f"strain{key}")
+    strain = strain.replace("'", "")
     sex = st.selectbox("What is their sex?:red[*]", ("Male", "Female", "Both", "Unknown"), None, 
                        key=f"sex{key}")
     if sex == None:
         sex = ""
     origin = st.text_input("Where were the mice obtained from?:red[*]",
                            placeholder="HFK Biotechnology (Beijing, China)", key=f"origin{key}")
+    origin = origin.replace("'", "")
     conditions = st.text_input("What conditions were they under?",
                                placeholder="Specific pathogen-free facility under a 12 h light/dark "
                                "cycle with free access to water and food", key=f"conditions{key}")
+    conditions = conditions.replace("'", "")
     mice_cols = (age, strain, sex, origin, conditions)
     req_mice_cols = (age, strain, sex, origin)
     return mice_cols, req_mice_cols
@@ -78,6 +83,7 @@ def getSeq(key):
             dataAvail = '0'
     exp_groups = st.text_input("Breifly describe the experimental groups:red[*]", 
                             placeholder="Four E4bp4−/− mice and four control mice", key=f"exp_groups{key}")
+    exp_groups = exp_groups.replace("'", "")
     prep = st.text_input("Which library preparation protocol was used?:red[*]", 
                         placeholder="Bioanalyzer 2100 RNA 6000 Nano Kit, 10x Genomics "
                         "(Chromium Single Cell Controller)", key=f"prep{key}")
@@ -98,8 +104,10 @@ def getData(key):
                                 placeholder="Additional public data used to enrich murine dendritic "
                                 "cells subset using Seurat",
                                 key=f"description{key}")
+    description = description.replace("'", "")
     dbname = st.text_input("In what database can this data be found?:red[*]",
                            placeholder="GEO", key=f"dbname{key}")
+    dbname = dbname.replace("'", "")
     accNum = st.text_input("What is the accession number?", placeholder="GSE151658", key=f"accNum{key}")
     url = st.text_input("Please provide the URL to the data:red[*]",
                         placeholder="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE151658",
@@ -111,8 +119,10 @@ def getData(key):
 def getIntervention(key):
     treatment = st.text_input("What treatment were the mice given?:red[*]", 
                               placeholder="Induced polymicrobial sepsis", key=f"treatment{key}")
+    treatment = treatment.replace("'", "")
     method = st.text_input("What method was used to give this treatment?:red[*]", 
                            placeholder="Cecal ligation and puncture (CLP)", key=f"method{key}")
+    method = method.replace("'", "")
     intervention_cols = (treatment, method)
     req_intervention_cols = (treatment, method)
     return intervention_cols, req_intervention_cols
